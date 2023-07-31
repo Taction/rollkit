@@ -10,13 +10,13 @@ import (
 	goheaderp2p "github.com/celestiaorg/go-header/p2p"
 	goheaderstore "github.com/celestiaorg/go-header/store"
 	goheadersync "github.com/celestiaorg/go-header/sync"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtypes "github.com/cometbft/cometbft/types"
 	ds "github.com/ipfs/go-datastore"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/net/conngater"
-	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"go.uber.org/multierr"
 
 	"github.com/rollkit/rollkit/config"
@@ -29,7 +29,7 @@ import (
 // Uses the go-header library for handling all P2P logic.
 type HeaderExchangeService struct {
 	conf        config.NodeConfig
-	genesis     *tmtypes.GenesisDoc
+	genesis     *cmtypes.GenesisDoc
 	p2p         *p2p.Client
 	ex          *goheaderp2p.Exchange[*types.SignedHeader]
 	sub         *goheaderp2p.Subscriber[*types.SignedHeader]
@@ -43,7 +43,7 @@ type HeaderExchangeService struct {
 	ctx    context.Context
 }
 
-func NewHeaderExchangeService(ctx context.Context, store ds.TxnDatastore, conf config.NodeConfig, genesis *tmtypes.GenesisDoc, p2p *p2p.Client, logger log.Logger) (*HeaderExchangeService, error) {
+func NewHeaderExchangeService(ctx context.Context, store ds.TxnDatastore, conf config.NodeConfig, genesis *cmtypes.GenesisDoc, p2p *p2p.Client, logger log.Logger) (*HeaderExchangeService, error) {
 	if genesis == nil {
 		return nil, errors.New("genesis doc cannot be nil")
 	}
@@ -126,8 +126,11 @@ func (hExService *HeaderExchangeService) Start() error {
 		return fmt.Errorf("error while starting header store: %w", err)
 	}
 
-	_, _, network := hExService.p2p.Info()
 	var err error
+	_, _, network, err := hExService.p2p.Info()
+	if err != nil {
+		return fmt.Errorf("error while fetching the network: %w", err)
+	}
 	if hExService.p2pServer, err = newP2PServer(hExService.p2p.Host(), hExService.headerStore, network); err != nil {
 		return fmt.Errorf("error while creating p2p server: %w", err)
 	}

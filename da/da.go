@@ -15,6 +15,7 @@ var (
 	ErrDataNotFound = errors.New("data not found")
 	// ErrNamespaceNotFound is used to indicate that the block contains data, but not for the requested namespace.
 	ErrNamespaceNotFound = errors.New("namespace not found in data")
+	ErrBlobNotFound      = errors.New("blob: not found")
 	ErrEDSNotFound       = errors.New("eds not found")
 )
 
@@ -42,8 +43,8 @@ type BaseResult struct {
 	DAHeight uint64
 }
 
-// ResultSubmitBlock contains information returned from DA layer after block submission.
-type ResultSubmitBlock struct {
+// ResultSubmitBlocks contains information returned from DA layer after blocks submission.
+type ResultSubmitBlocks struct {
 	BaseResult
 	// Not sure if this needs to be bubbled up to other
 	// parts of Rollkit.
@@ -78,13 +79,10 @@ type DataAvailabilityLayerClient interface {
 	// Stop is called once, when DataAvailabilityLayerClient is no longer needed.
 	Stop() error
 
-	// SubmitBlock submits the passed in block to the DA layer.
+	// SubmitBlocks submits the passed in blocks to the DA layer.
 	// This should create a transaction which (potentially)
 	// triggers a state transition in the DA layer.
-	SubmitBlock(ctx context.Context, block *types.Block) ResultSubmitBlock
-
-	// CheckBlockAvailability queries DA layer to check data availability of block corresponding at given height.
-	CheckBlockAvailability(ctx context.Context, dataLayerHeight uint64) ResultCheckBlock
+	SubmitBlocks(ctx context.Context, blocks []*types.Block) ResultSubmitBlocks
 }
 
 // BlockRetriever is additional interface that can be implemented by Data Availability Layer Client that is able to retrieve
